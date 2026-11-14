@@ -21,7 +21,7 @@
   })();
 </script>
 <meta name="description" content="Tainan and Taipei trips combining Taiwan Railway and High Speed Rail.">
-<title>臺南 ⇄ 臺北 train planner</title>
+<title>Tainan ⇄ Taipei train planner</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -88,6 +88,8 @@
   .end { display: flex; flex-direction: column; min-width: 0; }
   .end .zh { font: 700 clamp(2.4rem, 13vw, 3.6rem)/1 var(--zh); letter-spacing: .02em; }
   .end .en { font: 600 1rem/1.3 var(--display); color: var(--muted); margin-top: 6px; }
+  .end .en:empty { display: none; }
+  .route.latin .end .zh { font: 700 clamp(2rem, 10vw, 3.2rem)/1 var(--display); letter-spacing: 0; }  /* English: names only */
   .swap {
     flex: none; width: 48px; height: 48px; border-radius: 50%;
     border: 2px solid var(--ink); background: transparent; cursor: pointer;
@@ -414,11 +416,11 @@ function hm(min) {
 }
 function station(name) {
   const s = STATION[name] || [name, name];
-  return zh() ? `<span class="zh">${s[0]}</span>` : `<span class="zh">${s[0]}</span> ${s[1]}`;
+  return zh() ? `<span class="zh">${s[0]}</span>` : esc(s[1]);
 }
 function stationText(name) {
   const s = STATION[name] || [name, name];
-  return zh() ? s[0] : `${s[0]} ${s[1]}`;
+  return zh() ? s[0] : s[1];
 }
 
 // ---------- Travel day ("YYYY-MM-DD", phone's local date) ----------
@@ -443,8 +445,11 @@ function travelDay() { return $('day').value || dayFromNow(0); }
 
 function paintRoute() {
   const r = DIRECTIONS[direction];
-  $('fromZh').textContent = r.from[0]; $('fromEn').textContent = r.from[1];
-  $('toZh').textContent = r.to[0];     $('toEn').textContent = r.to[1];
+  // 中文: big Chinese name with the English below; English: the English name only.
+  const big = zh() ? 0 : 1;
+  $('fromZh').textContent = r.from[big]; $('fromEn').textContent = zh() ? r.from[1] : '';
+  $('toZh').textContent = r.to[big];     $('toEn').textContent = zh() ? r.to[1] : '';
+  document.querySelector('.route').classList.toggle('latin', !zh());
   $('via').textContent = t('via_' + direction);
 }
 
@@ -716,6 +721,7 @@ $('swap').addEventListener('click', () => {
 // Fill every static label for the current language, then redraw the results.
 function applyLang(redraw) {
   document.documentElement.lang = zh() ? 'zh-Hant-TW' : 'en';
+  document.title = zh() ? '臺南 ⇄ 臺北 火車規劃' : 'Tainan ⇄ Taipei train planner';
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
   $('langBtn').textContent = t('other');

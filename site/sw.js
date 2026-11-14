@@ -1,6 +1,6 @@
 // Offline support: keep a copy of the planner on the phone.
 // CACHE and SHELL are written by scripts/build_site.py; do not edit them by hand.
-const CACHE = "planner-dd7a11e5d9";
+const CACHE = "planner-f060a65011";
 const SHELL = [
   "./",
   "./data.js",
