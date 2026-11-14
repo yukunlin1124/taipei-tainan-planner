@@ -1,0 +1,3 @@
+# Only needed to re-parse the timetable PDFs (scripts/). The planner itself (site/) needs nothing installed.
+pymupdf>=1.24
+rapidocr-onnxruntime>=1.3

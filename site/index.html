@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14273A">
+<meta name="description" content="Tainan and Taipei trips combining Taiwan Railway and High Speed Rail.">
+<title>臺南 ⇄ 臺北 train planner</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F7F9F9;
+    --ink: #14273A;
+    --muted: #5A6875;
+    --rule: #D3DAE0;
+    --tr: #1E5AA8;
+    --hsr: #E8701A;
+    --band: #E7EEF4;
+    --display: "Barlow Semi Condensed", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --body: "Barlow", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --zh: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+    --pad: clamp(18px, 5vw, 32px);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 400 1rem/1.5 var(--body);
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap {
+    max-width: 640px; margin: 0 auto;
+    padding: var(--pad);
+    padding-left: max(var(--pad), env(safe-area-inset-left));
+    padding-right: max(var(--pad), env(safe-area-inset-right));
+    padding-bottom: max(48px, env(safe-area-inset-bottom));
+  }
+  button, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--tr); outline-offset: 2px; }
+
+  /* ---------- Route header: the direction is the headline ---------- */
+  .route { padding: 8px 0 22px; border-bottom: 2px solid var(--ink); }
+  .ends { display: flex; align-items: center; gap: clamp(10px, 4vw, 22px); }
+  .end { display: flex; flex-direction: column; min-width: 0; }
+  .end .zh { font: 700 clamp(2.4rem, 13vw, 3.6rem)/1 var(--zh); letter-spacing: .02em; }
+  .end .en { font: 600 1rem/1.3 var(--display); color: var(--muted); margin-top: 6px; }
+  .swap {
+    flex: none; width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid var(--ink); background: transparent; cursor: pointer;
+    display: grid; place-items: center; transition: transform .35s ease;
+  }
+  .swap:hover { background: var(--ink); color: var(--paper); }
+  .swap.spun { transform: rotate(180deg); }
+  .swap svg { width: 22px; height: 22px; }
+  .via { margin: 14px 0 0; color: var(--muted); font-size: .95rem; }
+
+  /* ---------- Departure time ---------- */
+  .ask { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; padding: 22px 0; }
+  .ask .field { flex: 1 1 220px; }
+  .ask label { display: block; font: 600 .95rem/1.2 var(--display); margin-bottom: 8px; }
+  .timepick { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 6px; }
+  .timepick select {
+    appearance: none; -webkit-appearance: none;
+    width: 100%; min-height: 48px; padding: 0 30px 0 14px;
+    font: 600 1.25rem var(--display);
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2314273A' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 1.5px solid var(--rule); border-radius: 6px; cursor: pointer;
+  }
+  .timepick select:hover { border-color: var(--ink); }
+  #day {
+    width: 100%; min-width: 0; min-height: 48px; padding: 0 12px;
+    font: 600 1.1rem var(--display); color: var(--ink);
+    background: #fff; border: 1.5px solid var(--rule); border-radius: 6px;
+  }
+  #day:hover { border-color: var(--ink); }
+  .go {
+    flex: 1 1 140px; min-height: 48px; padding: 0 22px;
+    background: var(--ink); color: var(--paper); border: 0; border-radius: 6px;
+    font: 600 1.1rem var(--display); cursor: pointer;
+  }
+  .go:hover { background: #22405c; }
+
+  /* ---------- Results ---------- */
+  .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
+          border-top: 1px solid var(--rule); padding-top: 18px; }
+  .head h2 { margin: 0; font: 600 1.15rem/1.3 var(--display); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none;
+            font-size: .85rem; color: var(--muted); }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+  .sw { display: inline-block; width: 18px; height: 8px; border-radius: 2px; }
+  .sw.tr { background: var(--tr); } .sw.hsr { background: var(--hsr); }
+  .sw.wait { background: repeating-linear-gradient(90deg, var(--muted) 0 2px, transparent 2px 5px); }
+
+  .trips { list-style: none; margin: 14px 0 0; padding: 0; }
+  .trip { position: relative; padding: 18px 0 18px; border-bottom: 1px solid var(--rule); }
+  .trip.fastest { background: var(--band); margin: 0 calc(var(--pad) * -1); padding-left: var(--pad); padding-right: var(--pad);
+                  border-bottom-color: transparent; }
+  .trip.fastest::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--ink); }
+
+  .times { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
+  .times .t { font: 700 1.6rem/1.1 var(--display); }
+  .times .ap { font-size: .62em; font-weight: 600; margin-left: 2px; }
+  .times .to { color: var(--muted); font: 500 1.1rem var(--display); }
+  .times .dur { margin-left: auto; font: 600 1.05rem var(--display); white-space: nowrap; }
+  .tag { display: block; font: 600 .9rem/1.2 var(--display); color: var(--ink); margin-top: 4px; }
+
+  .bar { display: flex; align-items: center; height: 12px; margin: 12px 0 10px; }
+  .bar i { display: block; height: 100%; border-radius: 3px; transform-origin: left center; }
+  .bar .tr { background: var(--tr); }
+  .bar .hsr { background: var(--hsr); }
+  .bar .wait { height: 4px; border-radius: 0; background: repeating-linear-gradient(90deg, var(--muted) 0 2px, transparent 2px 5px); }
+  .trip.fastest .bar { height: 16px; }
+  .grow .bar i { animation: grow .55s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes grow { from { transform: scaleX(0); } }
+
+  .legs { margin: 0; padding: 0; list-style: none; font-size: .95rem; }
+  .legs li { display: grid; grid-template-columns: 84px 1fr; gap: 8px; padding: 2px 0; }
+  .legs .sys { font: 600 .95rem var(--display); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legs .sys::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: currentColor; }
+  .legs .sys.tr::before { background: var(--tr); } .legs .sys.hsr::before { background: var(--hsr); }
+  .legs .zh { font-family: var(--zh); font-weight: 500; }
+  .legs .change { color: var(--muted); }
+  .stops { display: flex; flex-direction: column; }
+  .stop { display: flex; gap: 10px; white-space: nowrap; }
+  .stop .at { min-width: 68px; font-weight: 500; }
+  .legs .change.tight { color: #9a3b0c; font-weight: 600; }
+
+  .act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; }
+  .pick {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border-radius: 6px; cursor: pointer;
+    background: transparent; border: 1.5px solid var(--ink); font: 600 1rem var(--display);
+    color: var(--ink); text-decoration: none;
+  }
+  .pick svg { width: 18px; height: 18px; }
+  .pick:hover { background: var(--ink); color: var(--paper); }
+  .trip.added .pick { background: var(--ink); color: var(--paper); }
+  .status { font-size: .92rem; color: var(--muted); }
+
+  .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px; }
+  .pager button {
+    min-height: 44px; padding: 0 16px; background: transparent; cursor: pointer;
+    border: 1.5px solid var(--rule); border-radius: 6px; font: 600 1rem var(--display);
+  }
+  .pager button:hover:not([disabled]) { border-color: var(--ink); }
+  .pager button[disabled] { visibility: hidden; }
+  .pager button { white-space: nowrap; }
+  .pager span { color: var(--muted); font-size: .9rem; text-align: center; white-space: nowrap; }
+
+  .empty { padding: 28px 0; color: var(--muted); }
+
+  @media (max-width: 420px) {
+    .legs li { grid-template-columns: 72px 1fr; }
+    .stop { gap: 8px; }
+    .pager button { padding: 0 12px; }
+    .times .t { font-size: 1.45rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .grow .bar i { animation: none; }
+    .swap { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="route">
+    <div class="ends">
+      <div class="end"><span class="zh" id="fromZh">臺南</span><span class="en" id="fromEn">Tainan</span></div>
+      <button class="swap" id="swap" type="button" aria-label="Swap direction">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 8h15l-4-4M20 16H5l4 4"/>
+        </svg>
+      </button>
+      <div class="end"><span class="zh" id="toZh">臺北</span><span class="en" id="toEn">Taipei</span></div>
+    </div>
+    <p class="via" id="via">Taiwan Railway to Shalun, then High Speed Rail from HSR Tainan.</p>
+  </header>
+
+  <form class="ask" id="ask">
+    <div class="field">
+      <label for="day">Travel day</label>
+      <input id="day" type="date" aria-label="Travel day">
+    </div>
+    <div class="field">
+      <label for="hour">Leave after</label>
+      <div class="timepick">
+        <select id="hour" aria-label="Hour"></select>
+        <select id="minute" aria-label="Minutes">
+          <option value="00">:00</option>
+          <option value="30">:30</option>
+        </select>
+        <select id="ampm" aria-label="AM or PM">
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+    <button class="go" type="submit">Find trains</button>
+  </form>
+
+  <section id="results" aria-live="polite"></section>
+</main>
+
+<script src="data.js"></script>
+<script src="matcher.js"></script>
+<script>
+const PER_PAGE = 4;
+localStorage.removeItem('planner.mailTo');   // left over from the old email button
+const ROUTES = {
+  south_to_north: {
+    from: ['臺南', 'Tainan'], to: ['臺北', 'Taipei'],
+    via: 'Taiwan Railway to Shalun, then High Speed Rail from HSR Tainan.'
+  },
+  north_to_south: {
+    from: ['臺北', 'Taipei'], to: ['臺南', 'Tainan'],
+    via: 'High Speed Rail to HSR Tainan, then Taiwan Railway from Shalun.'
+  },
+};
+const STATION = {
+  'Tainan': ['臺南', 'Tainan'],
+  'Shalun': ['沙崙', 'Shalun'],
+  'Tainan (HSR)': ['高鐵臺南', 'HSR Tainan'],
+  'Taipei': ['臺北', 'Taipei'],
+};
+const BOOK = {
+  HSR: 'https://irs.thsrc.com.tw/IMINT/',
+  TR: 'https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip112/gobytime',
+};
+
+let direction = 'south_to_north';
+let results = [];
+let page = 0;
+let askedAt = '';
+
+const $ = id => document.getElementById(id);
+const { match, DIRECTIONS, dur } = window.Planner;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// hour dropdown 1-12, default 8 AM
+$('hour').innerHTML = Array.from({ length: 12 }, (_, i) =>
+  `<option value="${i + 1}"${i + 1 === 8 ? ' selected' : ''}>${i + 1}</option>`).join('');
+
+function startTime() {
+  let h = parseInt($('hour').value, 10) % 12;
+  if ($('ampm').value === 'PM') h += 12;
+  return String(h).padStart(2, '0') + ':' + $('minute').value;
+}
+function ampm(t, html) {
+  let [h, m] = t.split(':').map(Number);
+  const p = h < 12 ? 'AM' : 'PM';
+  h = h % 12 || 12;
+  const hm = `${h}:${String(m).padStart(2, '0')}`;
+  return html ? `${hm}<span class="ap">${p}</span>` : `${hm} ${p}`;
+}
+function hm(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
+function station(name) {
+  const s = STATION[name] || [name, name];
+  return `<span class="zh">${s[0]}</span> ${s[1]}`;
+}
+function stationText(name) {
+  const s = STATION[name] || [name, name];
+  return `${s[0]} ${s[1]}`;
+}
+
+// ---------- Travel day ("YYYY-MM-DD", phone's local date) ----------
+function isoDay(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function dayFromNow(n) { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d); }
+function addDays(iso, n) {            // calendar-safe, no time-zone drift
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return t.toISOString().slice(0, 10);
+}
+function dayLabel(iso) {
+  if (iso === dayFromNow(0)) return 'today';
+  if (iso === dayFromNow(1)) return 'tomorrow';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function travelDay() { return $('day').value || dayFromNow(0); }
+
+function paintRoute() {
+  const r = ROUTES[direction];
+  $('fromZh').textContent = r.from[0]; $('fromEn').textContent = r.from[1];
+  $('toZh').textContent = r.to[0];     $('toEn').textContent = r.to[1];
+  $('via').textContent = r.via;
+}
+
+function search() {
+  askedAt = startTime();
+  results = match(window.TIMETABLES, direction, askedAt);
+  page = 0;
+  render(true);
+}
+
+function legRow(l) {
+  const sys = l.system === 'HSR' ? 'hsr' : 'tr';
+  return `<li><span class="sys ${sys}">${l.system} ${esc(l.train)}</span>
+    <span class="stops">
+      <span class="stop"><span class="at">${ampm(l.dep)}</span>${station(l.from)}</span>
+      <span class="stop"><span class="at">${ampm(l.arr)}</span>${station(l.to)}</span>
+    </span></li>`;
+}
+
+function render(animate) {
+  const box = $('results');
+  if (!results.length) {
+    box.innerHTML = `<p class="empty">No connections leave after ${ampm(askedAt)}. Pick an earlier time.</p>`;
+    return;
+  }
+  const pages = Math.ceil(results.length / PER_PAGE);
+  const from = page * PER_PAGE;
+  const slice = results.slice(from, from + PER_PAGE);
+  const best = Math.min(...slice.map(c => c.total_min));
+  const scale = Math.max(...slice.map(c => c.total_min));   // shared scale for this page
+
+  const rows = slice.map((c, k) => {
+    const i = from + k, l1 = c.leg1, l2 = c.leg2;
+    const r1 = dur(l1.dep, l1.arr), w = c.transfer_wait, r2 = dur(l2.dep, l2.arr);
+    const pct = v => (v / scale * 100).toFixed(2) + '%';
+    const fast = c.total_min === best;
+    const tight = w <= 3;
+    return `<li class="trip${fast ? ' fastest' : ''}" id="c${i}">
+      <div class="times">
+        <span class="t">${ampm(c.depart, true)}</span><span class="to">to</span><span class="t">${ampm(c.arrive, true)}</span>
+        <span class="dur">${hm(c.total_min)}</span>
+      </div>
+      ${fast ? '<span class="tag">Fastest on this page</span>' : ''}
+      <div class="bar" role="img" aria-label="${l1.system} ${r1} min, change ${w} min, ${l2.system} ${r2} min">
+        <i class="${l1.system === 'HSR' ? 'hsr' : 'tr'}" style="width:${pct(r1)}"></i>
+        <i class="wait" style="width:${pct(w)}"></i>
+        <i class="${l2.system === 'HSR' ? 'hsr' : 'tr'}" style="width:${pct(r2)}"></i>
+      </div>
+      <ul class="legs">
+        ${legRow(l1)}
+        <li class="change${tight ? ' tight' : ''}"><span></span><span>${w} min to change at Shalun${tight ? ', tight connection' : ''}</span></li>
+        ${legRow(l2)}
+      </ul>
+      <div class="act">
+        <a class="pick" href="${esc(calendarUrl(c))}" target="_blank" rel="noopener" onclick="added(${i})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/>
+          </svg>Add to Google Calendar</a>
+        <span class="status" id="s${i}"></span>
+      </div>
+    </li>`;
+  }).join('');
+
+  const last = Math.min(from + PER_PAGE, results.length);
+  box.innerHTML = `
+    <div class="head">
+      <h2>Trains ${from + 1}–${last} of ${results.length}, leaving ${dayLabel(travelDay())} after ${ampm(askedAt)}</h2>
+      <ul class="legend">
+        <li><span class="sw tr"></span>Taiwan Railway</li>
+        <li><span class="sw hsr"></span>High Speed Rail</li>
+        <li><span class="sw wait"></span>Change</li>
+      </ul>
+    </div>
+    <ol class="trips${animate ? ' grow' : ''}">${rows}</ol>
+    ${pages > 1 ? `<nav class="pager" aria-label="More trains">
+      <button type="button" onclick="go(-1)" ${page === 0 ? 'disabled' : ''}>Earlier trains</button>
+      <span>Page ${page + 1} of ${pages}</span>
+      <button type="button" onclick="go(1)" ${page >= pages - 1 ? 'disabled' : ''}>Later trains</button>
+    </nav>` : ''}`;
+}
+
+function go(d) {
+  page += d;
+  render(true);
+  $('results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+// ---------- Add to Google Calendar: opens prefilled, you tap Save ----------
+function planText(c) {
+  const l1 = c.leg1, l2 = c.leg2;
+  return [
+    `Trip: ${DIRECTIONS[direction].label}`,
+    `Depart ${ampm(c.depart)}, arrive ${ampm(c.arrive)} (${hm(c.total_min)}, ${c.transfer_wait} min to change at Shalun)`,
+    '',
+    `1) ${l1.system} train ${l1.train}`,
+    `   ${ampm(l1.dep)}  ${stationText(l1.from)}`,
+    `   ${ampm(l1.arr)}  ${stationText(l1.to)}`,
+    '',
+    `2) ${l2.system} train ${l2.train}`,
+    `   ${ampm(l2.dep)}  ${stationText(l2.from)}`,
+    `   ${ampm(l2.arr)}  ${stationText(l2.to)}`,
+    '',
+    `Book HSR: ${BOOK.HSR}`,
+    `Book TR:  ${BOOK.TR}`,
+  ].join('\n');
+}
+
+// Google Calendar wants "YYYYMMDDTHHMMSS"; with ctz=Asia/Taipei the times are Taiwan time.
+function gcalStamp(iso, t) { return iso.replace(/-/g, '') + 'T' + t.replace(':', '') + '00'; }
+
+function calendarUrl(c) {
+  const day = travelDay();
+  const endDay = c.arrive < c.depart ? addDays(day, 1) : day;   // trip runs past midnight
+  const r = ROUTES[direction];
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `${r.from[1]} → ${r.to[1]}: ${c.leg1.system} ${c.leg1.train} + ${c.leg2.system} ${c.leg2.train}`,
+    dates: `${gcalStamp(day, c.depart)}/${gcalStamp(endDay, c.arrive)}`,
+    ctz: 'Asia/Taipei',
+    location: `${stationText(c.leg1.from)} station`,
+    details: planText(c),
+  });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+function added(i) {
+  $('c' + i).classList.add('added');
+  $('s' + i).textContent = 'Opened Google Calendar. Tap Save there.';
+}
+
+$('day').value = dayFromNow(0);
+$('day').addEventListener('change', () => render(false));
+
+$('ask').addEventListener('submit', e => { e.preventDefault(); search(); });
+$('swap').addEventListener('click', () => {
+  direction = direction === 'south_to_north' ? 'north_to_south' : 'south_to_north';
+  $('swap').classList.toggle('spun');
+  paintRoute();
+  search();
+});
+paintRoute();
+search();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

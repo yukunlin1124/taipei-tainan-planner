@@ -1,0 +1,17 @@
+{
+  "name": "臺南 ⇄ 臺北 train planner",
+  "short_name": "南北列車",
+  "description": "Tainan and Taipei trips combining Taiwan Railway and High Speed Rail.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F9F9",
+  "theme_color": "#14273A",
+  "lang": "zh-Hant-TW",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

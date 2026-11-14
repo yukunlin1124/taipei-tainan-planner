@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Open planner
+Comment=Tainan ⇄ Taipei train planner
+Exec=sh -c 'cd "$(dirname "$1")" && exec xdg-open site/index.html' sh %k
+Icon=web-browser
+Terminal=false
+Categories=Utility;
