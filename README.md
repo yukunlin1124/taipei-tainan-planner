@@ -36,15 +36,15 @@ Source: GitHub Actions**. Any other static HTTPS host also works with `site/` as
 
 ```
 site/          the planner (published to GitHub Pages)
-  index.html     page, styles, station names, booking links, calendar button
-  matcher.js     trip-matching rules (TRANSFER_MIN, directions)
+  index.html     page, styles, booking links, calendar button
+  matcher.js     trip-matching rules, directions, station names
   data.js        generated from timetables/*.json - do not edit
   sw.js, manifest.webmanifest, icon-*.png   install and offline support
 timetables/    timetable data
   *.json         parsed timetables the planner uses
   source/        original PDFs
-scripts/       tools to refresh the timetables
-qr.png         QR code that opens the published planner
+scripts/       tools to refresh the timetables, build the site, make the QR code
+qr.png         QR code that opens the published planner (scripts/make_qr.py)
 ```
 
 ## Update the timetables

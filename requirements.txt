@@ -1,3 +1,5 @@
-# Only needed to re-parse the timetable PDFs (scripts/). The planner itself (site/) needs nothing installed.
+# Only needed for the tools in scripts/. The planner itself (site/) needs nothing installed.
+# pymupdf, rapidocr: re-parse the timetable PDFs. segno: scripts/make_qr.py.
 pymupdf>=1.24
 rapidocr-onnxruntime>=1.3
+segno>=1.6

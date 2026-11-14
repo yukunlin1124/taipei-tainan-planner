@@ -1,14 +1,15 @@
 // Offline support: keep a copy of the planner on the phone.
-// CACHE is rewritten by scripts/build_site.py whenever a site file changes.
-const CACHE = "planner-6307480568";
+// CACHE and SHELL are written by scripts/build_site.py; do not edit them by hand.
+const CACHE = "planner-47e81fc9d8";
 const SHELL = [
   "./",
-  "./index.html",
-  "./matcher.js",
   "./data.js",
-  "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon.ico",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./matcher.js",
 ];
 
 self.addEventListener("install", e => {

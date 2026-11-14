@@ -211,22 +211,6 @@
 <script>
 const PER_PAGE = 4;
 localStorage.removeItem('planner.mailTo');   // left over from the old email button
-const ROUTES = {
-  south_to_north: {
-    from: ['臺南', 'Tainan'], to: ['臺北', 'Taipei'],
-    via: 'Taiwan Railway to Shalun, then High Speed Rail from HSR Tainan.'
-  },
-  north_to_south: {
-    from: ['臺北', 'Taipei'], to: ['臺南', 'Tainan'],
-    via: 'High Speed Rail to HSR Tainan, then Taiwan Railway from Shalun.'
-  },
-};
-const STATION = {
-  'Tainan': ['臺南', 'Tainan'],
-  'Shalun': ['沙崙', 'Shalun'],
-  'Tainan (HSR)': ['高鐵臺南', 'HSR Tainan'],
-  'Taipei': ['臺北', 'Taipei'],
-};
 const BOOK = {
   HSR: 'https://irs.thsrc.com.tw/IMINT/',
   TR: 'https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip112/gobytime',
@@ -238,7 +222,7 @@ let page = 0;
 let askedAt = '';
 
 const $ = id => document.getElementById(id);
-const { match, DIRECTIONS, dur } = window.Planner;
+const { match, DIRECTIONS, STATION, dur } = window.Planner;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // hour dropdown 1-12, default 8 AM
@@ -289,7 +273,7 @@ function dayLabel(iso) {
 function travelDay() { return $('day').value || dayFromNow(0); }
 
 function paintRoute() {
-  const r = ROUTES[direction];
+  const r = DIRECTIONS[direction];
   $('fromZh').textContent = r.from[0]; $('fromEn').textContent = r.from[1];
   $('toZh').textContent = r.to[0];     $('toEn').textContent = r.to[1];
   $('via').textContent = r.via;
@@ -405,7 +389,7 @@ function gcalStamp(iso, t) { return iso.replace(/-/g, '') + 'T' + t.replace(':',
 function calendarUrl(c) {
   const day = travelDay();
   const endDay = c.arrive < c.depart ? addDays(day, 1) : day;   // trip runs past midnight
-  const r = ROUTES[direction];
+  const r = DIRECTIONS[direction];
   const p = new URLSearchParams({
     action: 'TEMPLATE',
     text: `${r.from[1]} → ${r.to[1]}: ${c.leg1.system} ${c.leg1.train} + ${c.leg2.system} ${c.leg2.train}`,

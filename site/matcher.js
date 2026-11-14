@@ -1,4 +1,5 @@
-// Combined TR + HSR trip matcher: the one home of the trip-matching rules.
+// Combined TR + HSR trip matcher: the one home of the trip-matching rules,
+// the directions (route names, legs) and the station names shown on the page.
 //
 // Tainan -> Taipei : TR Tainan->Shalun, then HSR Tainan->Taipei.
 // Taipei -> Tainan : HSR Taipei->Tainan, then TR Shalun->Tainan.
@@ -7,14 +8,27 @@
 (function (root) {
   const TRANSFER_MIN = 0; // minimum change time at Shalun <-> HSR Tainan
 
+  // Station key (used in DIRECTIONS and trip legs) -> [Chinese, English] display name.
+  const STATION = {
+    'Tainan': ['臺南', 'Tainan'],
+    'Shalun': ['沙崙', 'Shalun'],
+    'Tainan (HSR)': ['高鐵臺南', 'HSR Tainan'],
+    'Taipei': ['臺北', 'Taipei'],
+  };
+
+  // leg: [timetable file in timetables/, system, from station, to station]
   const DIRECTIONS = {
     south_to_north: {
       label: 'Tainan → Taipei',
+      from: ['臺南', 'Tainan'], to: ['臺北', 'Taipei'],
+      via: 'Taiwan Railway to Shalun, then High Speed Rail from HSR Tainan.',
       leg1: ['tr_tainan_shalun', 'TR', 'Tainan', 'Shalun'],
       leg2: ['hsr_tainan_taipei', 'HSR', 'Tainan (HSR)', 'Taipei'],
     },
     north_to_south: {
       label: 'Taipei → Tainan',
+      from: ['臺北', 'Taipei'], to: ['臺南', 'Tainan'],
+      via: 'High Speed Rail to HSR Tainan, then Taiwan Railway from Shalun.',
       leg1: ['hsr_taipei_tainan', 'HSR', 'Taipei', 'Tainan (HSR)'],
       leg2: ['tr_shalun_tainan', 'TR', 'Shalun', 'Tainan'],
     },
@@ -53,7 +67,7 @@
     return combos;
   }
 
-  const api = { match, DIRECTIONS, TRANSFER_MIN, toMin, dur };
+  const api = { match, DIRECTIONS, STATION, TRANSFER_MIN, toMin, dur };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Planner = api;
 })(this);
