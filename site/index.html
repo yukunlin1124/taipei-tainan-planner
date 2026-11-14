@@ -36,8 +36,8 @@
     --rule: #D3DAE0;
     --tr: #1E5AA8;
     --hsr: #E8701A;
-    --band: #FDECEC;           /* fastest trip: red band */
-    --fast: #C62828;           /* fastest trip: red stripe, label, time */
+    --band: #D5F0DF;           /* shortest-travel-time trip: green band */
+    --fast: #157A42;           /* shortest-travel-time trip: stripe, label, time */
     --field: #FFFFFF;          /* inputs and dropdowns */
     --go-hover: #22405C;
     --warn: #9A3B0C;           /* tight connection */
@@ -56,8 +56,8 @@
     --rule: #2A3A49;
     --tr: #5A95E6;
     --hsr: #F2873A;
-    --band: #36191C;
-    --fast: #FF6B6B;
+    --band: #163A27;
+    --fast: #5BD38A;
     --field: #15222F;
     --go-hover: #C6D4E1;
     --warn: #F2A06A;
@@ -140,7 +140,7 @@
   .trip { position: relative; padding: 18px 0 18px; border-bottom: 1px solid var(--rule); }
   .trip.fastest { background: var(--band); margin: 0 calc(var(--pad) * -1); padding-left: var(--pad); padding-right: var(--pad);
                   border-bottom-color: transparent; }
-  .trip.fastest::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--fast); }
+  .trip.fastest::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 7px; background: var(--fast); }
   .trip.fastest .tag, .trip.fastest .dur { color: var(--fast); }
 
   .times { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
@@ -303,7 +303,7 @@ const TEXT = {
     via_south_to_north: 'Taiwan Railway to Shalun, then High Speed Rail from HSR Tainan.',
     via_north_to_south: 'High Speed Rail to HSR Tainan, then Taiwan Railway from Shalun.',
     TR: 'TR', HSR: 'HSR', trainNo: n => `train ${n}`,
-    h: (h, m) => `${h} h ${m} min`, min: m => `${m} min`,
+    h: (h, m) => m ? `${h} h ${m} min` : `${h} h`, min: m => `${m} min`,
     today: 'today', tomorrow: 'tomorrow', locale: 'en-US',
     left: 'Left', leavingNow: 'Leaving now', leavesIn: d => `Leaves in ${d}`,
     to: 'to', shortest: 'Shortest travel time',
@@ -328,7 +328,7 @@ const TEXT = {
     via_south_to_north: '搭臺鐵到沙崙，再從高鐵臺南站搭高鐵。',
     via_north_to_south: '搭高鐵到高鐵臺南站，再從沙崙搭臺鐵。',
     TR: '臺鐵', HSR: '高鐵', trainNo: n => `${n} 次`,
-    h: (h, m) => `${h} 小時 ${m} 分`, min: m => `${m} 分鐘`,
+    h: (h, m) => m ? `${h} 小時 ${m} 分` : `${h} 小時`, min: m => `${m} 分鐘`,
     today: '今天', tomorrow: '明天', locale: 'zh-TW',
     left: '已發車', leavingNow: '即將發車', leavesIn: d => `${d}後發車`,
     to: '至', shortest: '最短行車時間',
