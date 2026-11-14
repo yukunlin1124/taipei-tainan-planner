@@ -1,6 +1,6 @@
 {
-  "name": "臺南 ⇄ 臺北 train planner",
-  "short_name": "南北列車",
+  "name": "Taipei ⇄ Tainan",
+  "short_name": "Taipei ⇄ Tainan",
   "description": "Tainan and Taipei trips combining Taiwan Railway and High Speed Rail.",
   "start_url": "./",
   "scope": "./",
