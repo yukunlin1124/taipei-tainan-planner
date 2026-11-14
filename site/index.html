@@ -448,6 +448,10 @@ function render(animate) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/>
           </svg>Add to Google Calendar</a>
+        <button class="pick" type="button" onclick="shareTrip(${i})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>
+          </svg>Share</button>
         <span class="status" id="s${i}"></span>
       </div>
     </li>`;
@@ -512,6 +516,28 @@ function calendarUrl(c) {
     details: planText(c),
   });
   return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+// ---------- Share: the phone's share menu (LINE, Messages, ...), or copy as a fallback ----------
+function shareText(c) {
+  const [y, m, d] = travelDay().split('-').map(Number);
+  const day = new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return `${day}\n${planText(c)}`;
+}
+async function shareTrip(i) {
+  const c = results[i], text = shareText(c), status = $('s' + i);
+  const title = `${DIRECTIONS[direction].label}, ${ampm(c.depart)} to ${ampm(c.arrive)}`;
+  if (navigator.share) {
+    try { await navigator.share({ title, text }); status.textContent = ''; }
+    catch (e) { /* closed the share menu: nothing to do */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    status.textContent = 'Trip copied. Paste it into any app.';
+  } catch (e) {
+    status.textContent = 'Sharing is not available in this browser.';
+  }
 }
 
 function added(i) {
