@@ -1,6 +1,6 @@
 // Offline support: keep a copy of the planner on the phone.
 // CACHE and SHELL are written by scripts/build_site.py; do not edit them by hand.
-const CACHE = "planner-ee5065e0bc";
+const CACHE = "planner-4016ab195d";
 const SHELL = [
   "./",
   "./data.js",
@@ -27,20 +27,42 @@ self.addEventListener("activate", e => {
   );
 });
 
+// The planner's own files: network first (revalidated with the server), so opening or
+// refreshing with internet always shows the newest version. Offline, or if the network takes
+// longer than 3 s, the copy saved on the phone is used. Web fonts: saved copy first.
+const NETWORK_WAIT_MS = 3000;
+
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
-  e.respondWith(
-    caches.match(req).then(hit => {
-      if (hit) return hit;
-      return fetch(req).then(res => {
-        // Also keep web fonts once they have been downloaded.
-        if (res.ok && /fonts\.(googleapis|gstatic)\.com/.test(req.url)) {
+  const url = new URL(req.url);
+
+  if (url.origin === self.location.origin) {
+    const fresh = (req.mode === "navigate" ? fetch(req.url, { cache: "no-cache" }) : fetch(req, { cache: "no-cache" }))
+      .then(res => {
+        if (res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy));
+          caches.open(CACHE).then(c => c.put(req.mode === "navigate" ? "./" : req, copy));
         }
         return res;
-      }).catch(() => hit);
-    })
+      });
+    const saved = () => caches.match(req.mode === "navigate" ? "./" : req, { ignoreSearch: true });
+    e.respondWith(new Promise(resolve => {
+      let done = false;
+      const finish = r => { if (!done && r) { done = true; resolve(r); } };
+      fresh.then(finish, () => saved().then(hit => hit ? finish(hit) : finish(Response.error())));
+      setTimeout(() => saved().then(finish), NETWORK_WAIT_MS);   // slow network: use the saved copy
+    }));
+    return;
+  }
+
+  e.respondWith(
+    caches.match(req).then(hit => hit || fetch(req).then(res => {
+      if (res.ok && /fonts\.(googleapis|gstatic)\.com/.test(req.url)) {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy));
+      }
+      return res;
+    }))
   );
 });

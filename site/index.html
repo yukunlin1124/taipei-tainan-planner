@@ -589,16 +589,23 @@ function calendarUrl(c) {
 }
 
 // ---------- Share: the phone's share menu (LINE, Messages, ...), or copy as a fallback ----------
+// Short, in the page's language: date and route, times, then one line per train.
 function shareText(c) {
   const [y, m, d] = travelDay().split('-').map(Number);
   const day = new Date(y, m - 1, d).toLocaleDateString(t('locale'), { weekday: 'short', month: 'short', day: 'numeric' });
-  return `${day}\n${planText(c)}`;
+  const name = n => (STATION[n] || [n, n])[zh() ? 0 : 1];
+  const leg = l => `${sysName(l.system)} ${l.train}  ${ampm(l.dep)} ${name(l.from)} → ${ampm(l.arr)} ${name(l.to)}`;
+  return [
+    `${day}  ${routeLabel()}`,
+    `${ampm(c.depart)} → ${ampm(c.arrive)} (${hm(c.total_min)})`,
+    leg(c.leg1),
+    leg(c.leg2),
+  ].join('\n');
 }
 async function shareTrip(i) {
   const c = results[i], text = shareText(c), status = $('s' + i);
-  const title = `${routeLabel()}, ${ampm(c.depart)} ${t('to')} ${ampm(c.arrive)}`;
   if (navigator.share) {
-    try { await navigator.share({ title, text }); status.textContent = ''; }
+    try { await navigator.share({ text }); status.textContent = ''; }   // no title: some apps would repeat it
     catch (e) { /* closed the share menu: nothing to do */ }
     return;
   }
@@ -639,16 +646,26 @@ function added(i) {
 })();
 
 // Re-run the search (keeping the page you're on) and look for a new version of the planner.
-async function refresh() {
-  if ($('day').value < dayFromNow(0)) $('day').value = dayFromNow(0);   // reopened on a later day
+// Pull to refresh: reload the page like a browser does, so the newest published version
+// loads (online), while keeping the direction, day, time and page you were looking at.
+const KEY_RESUME = 'planner.resume';
+function reloadKeepingState() {
+  sessionStorage.setItem(KEY_RESUME, JSON.stringify({
+    direction, page, day: $('day').value,
+    hour: $('hour').value, minute: $('minute').value, ampm: $('ampm').value,
+    y: window.scrollY,
+  }));
+  location.reload();
+}
+async function refresh() { reloadKeepingState(); }
+
+// Coming back to the app after a short time: redraw (countdowns, today's date).
+function softRefresh() {
+  if ($('day').value < dayFromNow(0)) $('day').value = dayFromNow(0);
   const keep = page;
   search();
   page = keep;
   render(false);
-  try {
-    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
-    if (reg) await reg.update();
-  } catch (e) {}
 }
 
 $('day').value = dayFromNow(0);
@@ -674,7 +691,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   if (hiddenAt && Date.now() - hiddenAt > 30 * 60000) {
     $('day').value = dayFromNow(0); setTimeToNow(); search();
-  } else refresh();
+  } else softRefresh();
 });
 
 // ---------- Appearance: Auto (follows the phone) / Light / Dark ----------
@@ -714,15 +731,28 @@ $('langBtn').addEventListener('click', () => {
 });
 
 applyLang(false);
-setTimeToNow();
-search();
+const resume = JSON.parse(sessionStorage.getItem(KEY_RESUME) || 'null');
+sessionStorage.removeItem(KEY_RESUME);
+if (resume) {
+  direction = resume.direction;
+  if (direction === 'north_to_south') $('swap').classList.add('spun');
+  paintRoute();
+  if (resume.day >= dayFromNow(0)) $('day').value = resume.day;
+  $('hour').value = resume.hour; $('minute').value = resume.minute; $('ampm').value = resume.ampm;
+  search();
+  page = resume.page; render(false);
+  window.scrollTo(0, resume.y || 0);
+} else {
+  setTimeToNow();
+  search();
+}
 
 // ---------- Updates: when a new version has been downloaded, reload into it once ----------
 if ('serviceWorker' in navigator) {
   const hadController = !!navigator.serviceWorker.controller;   // not on the very first install
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController && !reloading) { reloading = true; location.reload(); }
+    if (hadController && !reloading) { reloading = true; reloadKeepingState(); }
   });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
