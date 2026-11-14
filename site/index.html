@@ -400,7 +400,7 @@ function render(animate) {
         <span class="t">${ampm(c.depart, true)}</span><span class="to">to</span><span class="t">${ampm(c.arrive, true)}</span>
         <span class="dur">${hm(c.total_min)}</span>
       </div>
-      ${fast ? '<span class="tag">Fastest on this page</span>' : ''}
+      ${fast ? '<span class="tag">Shortest travel time</span>' : ''}
       <div class="bar" role="img" aria-label="${l1.system} ${r1} min, change ${w} min, ${l2.system} ${r2} min">
         <i class="${l1.system === 'HSR' ? 'hsr' : 'tr'}" style="width:${pct(r1)}"></i>
         <i class="wait" style="width:${pct(w)}"></i>
