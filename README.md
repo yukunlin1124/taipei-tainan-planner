@@ -13,6 +13,7 @@ first-leg train paired with the first connection leaving at or after it arrives
 times in Taiwan time); you tap Save and buy the tickets yourself.
 "Share" opens the phone's share menu (LINE, Messages, ...) with the trip filled in.
 Pull down at the top of the page to refresh.
+The button at the top switches the page between English and 中文.
 Some HSR trains run only on certain weekdays; the planner only uses trains that run on the
 chosen travel day. For today it starts from the current time and shows "Leaves in …" /
 "Left" on each trip.
