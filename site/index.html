@@ -150,7 +150,7 @@
   .pager button:hover:not([disabled]) { border-color: var(--ink); }
   .pager button[disabled] { visibility: hidden; }
   .pager button { white-space: nowrap; }
-  .pager span { color: var(--muted); font-size: .9rem; text-align: center; white-space: nowrap; }
+  .pager span { flex: 1; min-width: 0; color: var(--muted); font-size: .9rem; text-align: center; }
 
   .empty { padding: 28px 0; color: var(--muted); }
 
@@ -217,8 +217,10 @@ const BOOK = {
 };
 
 let direction = 'south_to_north';
-let results = [];
-let page = 0;
+let results = [];    // every trip of the day, by departure
+let first = 0;       // index of the first trip leaving at/after the chosen time
+let page = 0;        // 0 = first page after the chosen time; negative = earlier trains
+const canGo = { '-1': false, '1': false };   // set by render()
 let askedAt = '';
 
 const $ = id => document.getElementById(id);
@@ -281,7 +283,9 @@ function paintRoute() {
 
 function search() {
   askedAt = startTime();
-  results = match(window.TIMETABLES, direction, askedAt);
+  results = match(window.TIMETABLES, direction, '00:00');
+  first = results.findIndex(c => c.depart >= askedAt);
+  if (first < 0) first = results.length;
   page = 0;
   render(true);
 }
@@ -297,13 +301,22 @@ function legRow(l) {
 
 function render(animate) {
   const box = $('results');
-  if (!results.length) {
-    box.innerHTML = `<p class="empty">No connections leave after ${ampm(askedAt)}. Pick an earlier time.</p>`;
+  // Pages count out from the chosen time: page 0 starts at it, page -1 is the 4 trains before it.
+  const start = first + page * PER_PAGE;
+  const from = Math.max(start, 0);
+  const to = Math.min(start + PER_PAGE, page < 0 ? first : results.length);
+  const slice = results.slice(from, to);
+  const hasEarlier = canGo[-1] = from > 0;
+  const hasLater = canGo[1] = to < results.length;
+  const pager = (hasEarlier || hasLater) ? `<nav class="pager" aria-label="More trains">
+      <button type="button" onclick="go(-1)" ${hasEarlier ? '' : 'disabled'}>Earlier trains</button>
+      <span>${slice.length ? `${ampm(slice[0].depart)} – ${ampm(slice[slice.length - 1].depart)}` : ''}</span>
+      <button type="button" onclick="go(1)" ${hasLater ? '' : 'disabled'}>Later trains</button>
+    </nav>` : '';
+  if (!slice.length) {
+    box.innerHTML = `<p class="empty">No connections leave ${dayLabel(travelDay())} after ${ampm(askedAt)}.${hasEarlier ? ' See the earlier trains below.' : ''}</p>${pager}`;
     return;
   }
-  const pages = Math.ceil(results.length / PER_PAGE);
-  const from = page * PER_PAGE;
-  const slice = results.slice(from, from + PER_PAGE);
   const best = Math.min(...slice.map(c => c.total_min));
   const scale = Math.max(...slice.map(c => c.total_min));   // shared scale for this page
 
@@ -339,10 +352,12 @@ function render(animate) {
     </li>`;
   }).join('');
 
-  const last = Math.min(from + PER_PAGE, results.length);
+  const heading = page < 0
+    ? `Earlier trains, leaving ${dayLabel(travelDay())} before ${ampm(askedAt)}`
+    : `Trains ${from - first + 1}–${to - first} of ${results.length - first}, leaving ${dayLabel(travelDay())} after ${ampm(askedAt)}`;
   box.innerHTML = `
     <div class="head">
-      <h2>Trains ${from + 1}–${last} of ${results.length}, leaving ${dayLabel(travelDay())} after ${ampm(askedAt)}</h2>
+      <h2>${heading}</h2>
       <ul class="legend">
         <li><span class="sw tr"></span>Taiwan Railway</li>
         <li><span class="sw hsr"></span>High Speed Rail</li>
@@ -350,14 +365,11 @@ function render(animate) {
       </ul>
     </div>
     <ol class="trips${animate ? ' grow' : ''}">${rows}</ol>
-    ${pages > 1 ? `<nav class="pager" aria-label="More trains">
-      <button type="button" onclick="go(-1)" ${page === 0 ? 'disabled' : ''}>Earlier trains</button>
-      <span>Page ${page + 1} of ${pages}</span>
-      <button type="button" onclick="go(1)" ${page >= pages - 1 ? 'disabled' : ''}>Later trains</button>
-    </nav>` : ''}`;
+    ${pager}`;
 }
 
 function go(d) {
+  if (!canGo[d]) return;
   page += d;
   render(true);
   $('results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
