@@ -36,7 +36,8 @@
     --rule: #D3DAE0;
     --tr: #1E5AA8;
     --hsr: #E8701A;
-    --band: #E7EEF4;
+    --band: #FDECEC;           /* fastest trip: red band */
+    --fast: #C62828;           /* fastest trip: red stripe, label, time */
     --field: #FFFFFF;          /* inputs and dropdowns */
     --go-hover: #22405C;
     --warn: #9A3B0C;           /* tight connection */
@@ -55,7 +56,8 @@
     --rule: #2A3A49;
     --tr: #5A95E6;
     --hsr: #F2873A;
-    --band: #172736;
+    --band: #36191C;
+    --fast: #FF6B6B;
     --field: #15222F;
     --go-hover: #C6D4E1;
     --warn: #F2A06A;
@@ -138,7 +140,8 @@
   .trip { position: relative; padding: 18px 0 18px; border-bottom: 1px solid var(--rule); }
   .trip.fastest { background: var(--band); margin: 0 calc(var(--pad) * -1); padding-left: var(--pad); padding-right: var(--pad);
                   border-bottom-color: transparent; }
-  .trip.fastest::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--ink); }
+  .trip.fastest::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--fast); }
+  .trip.fastest .tag, .trip.fastest .dur { color: var(--fast); }
 
   .times { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
   .times .t { font: 700 1.6rem/1.1 var(--display); }
