@@ -12,6 +12,9 @@ first-leg train paired with the first connection leaving at or after it arrives
 "Add to Google Calendar" opens Google Calendar with the trip filled in (both trains,
 times in Taiwan time); you tap Save and buy the tickets yourself.
 Pull down at the top of the page to refresh.
+Some HSR trains run only on certain weekdays; the planner only uses trains that run on the
+chosen travel day. For today it starts from the current time and shows "Leaves in …" /
+"Left" on each trip.
 
 Everything runs in the browser: no server, and it works offline once installed.
 
@@ -55,7 +58,7 @@ The schedules are assumed constant. When new PDFs arrive:
 1. Replace the PDFs in `timetables/source/` (keep the same file names).
 2. `pip install -r requirements.txt` (first time only).
 3. `python scripts/parse_tr.py` and `python scripts/parse_hsr.py`
-   → `timetables/*.json`. Check the printed counts (TR about 36/37, HSR 73/73).
+   → `timetables/*.json`. Check the printed counts (TR about 36/37, HSR 74/74).
 4. `python scripts/build_site.py` → rebuilds `site/data.js` and bumps the offline
    cache so installed phones update.
 5. Commit and push; GitHub Pages republishes the planner.

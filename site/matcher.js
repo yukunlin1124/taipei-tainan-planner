@@ -37,13 +37,18 @@
   const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
   const dur = (dep, arr) => { const d = toMin(arr) - toMin(dep); return d < 0 ? d + 1440 : d; };
 
-  function match(tables, direction, startTime, transfer = TRANSFER_MIN) {
+  // A train with "days" (e.g. ["Fri", "Sun"]) runs only on those weekdays; without it, daily.
+  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];   // Date.getDay() order
+  const runsOn = (r, weekday) => !weekday || !r.days || r.days.includes(weekday);
+
+  // weekday: 'Mon'..'Sun' to keep only trains running that day; omit to ignore operating days.
+  function match(tables, direction, startTime, transfer = TRANSFER_MIN, weekday = null) {
     const cfg = DIRECTIONS[direction];
     const [f1, s1, from1, to1] = cfg.leg1;
     const [f2, s2, from2, to2] = cfg.leg2;
     const byDep = (a, b) => toMin(a.dep) - toMin(b.dep);
-    const leg1 = [...tables[f1]].sort(byDep);
-    const leg2 = [...tables[f2]].sort(byDep);
+    const leg1 = tables[f1].filter(r => runsOn(r, weekday)).sort(byDep);
+    const leg2 = tables[f2].filter(r => runsOn(r, weekday)).sort(byDep);
     const start = toMin(startTime);
 
     const combos = [];
@@ -67,7 +72,7 @@
     return combos;
   }
 
-  const api = { match, DIRECTIONS, STATION, TRANSFER_MIN, toMin, dur };
+  const api = { match, DIRECTIONS, STATION, TRANSFER_MIN, WEEKDAYS, toMin, dur };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Planner = api;
 })(this);

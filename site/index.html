@@ -148,6 +148,9 @@
   .times .ap { font-size: .62em; font-weight: 600; margin-left: 2px; }
   .times .to { color: var(--muted); font: 500 1.1rem var(--display); }
   .times .dur { margin-left: auto; font: 600 1.05rem var(--display); white-space: nowrap; }
+  .when { display: block; margin-top: 2px; font: 600 .92rem/1.3 var(--display); color: var(--tr); }
+  .trip.gone .when { color: var(--muted); }
+  .trip.gone .times, .trip.gone .bar, .trip.gone .legs { opacity: .45; }
   .tag { display: block; font: 600 .9rem/1.2 var(--display); color: var(--ink); margin-top: 4px; }
 
   .bar { display: flex; align-items: center; height: 12px; margin: 12px 0 10px; }
@@ -293,12 +296,37 @@ const canGo = { '-1': false, '1': false };   // set by render()
 let askedAt = '';
 
 const $ = id => document.getElementById(id);
-const { match, DIRECTIONS, STATION, dur } = window.Planner;
+const { match, DIRECTIONS, STATION, WEEKDAYS, toMin, dur } = window.Planner;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 // hour dropdown 1-12, default 8 AM
 $('hour').innerHTML = Array.from({ length: 12 }, (_, i) =>
   `<option value="${i + 1}"${i + 1 === 8 ? ' selected' : ''}>${i + 1}</option>`).join('');
+
+// Set "Leave after" to now, rounded down to :00 or :30, so the next trains show first.
+function setTimeToNow() {
+  const d = new Date();
+  const h24 = d.getHours(), m = d.getMinutes() < 30 ? '00' : '30';
+  $('hour').value = String(h24 % 12 || 12);
+  $('minute').value = m;
+  $('ampm').value = h24 < 12 ? 'AM' : 'PM';
+}
+function nowMin() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+function isToday() { return travelDay() === dayFromNow(0); }
+function weekdayOf(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return WEEKDAYS[new Date(y, m - 1, d).getDay()];
+}
+// For today's trips: "Leaves in 12 min" / "Left" (null for other days or far-off trains).
+function whenText(c) {
+  if (!isToday()) return null;
+  const left = toMin(c.depart) - nowMin();
+  if (left < 0) return 'Left';
+  if (left === 0) return 'Leaving now';
+  if (left > 180) return null;
+  return `Leaves in ${hm(left)}`;
+}
+function gone(c) { return isToday() && toMin(c.depart) < nowMin(); }
 
 function startTime() {
   let h = parseInt($('hour').value, 10) % 12;
@@ -352,7 +380,8 @@ function paintRoute() {
 
 function search() {
   askedAt = startTime();
-  results = match(window.TIMETABLES, direction, '00:00');
+  // Every trip of the travel day, keeping only HSR trains that run on that weekday.
+  results = match(window.TIMETABLES, direction, '00:00', undefined, weekdayOf(travelDay()));
   first = results.findIndex(c => c.depart >= askedAt);
   if (first < 0) first = results.length;
   page = 0;
@@ -386,20 +415,23 @@ function render(animate) {
     box.innerHTML = `<p class="empty">No connections leave ${dayLabel(travelDay())} after ${ampm(askedAt)}.${hasEarlier ? ' See the earlier trains below.' : ''}</p>${pager}`;
     return;
   }
-  const best = Math.min(...slice.map(c => c.total_min));
+  const live = slice.filter(c => !gone(c));
+  const best = live.length ? Math.min(...live.map(c => c.total_min)) : -1;   // shortest you can still catch
   const scale = Math.max(...slice.map(c => c.total_min));   // shared scale for this page
 
   const rows = slice.map((c, k) => {
     const i = from + k, l1 = c.leg1, l2 = c.leg2;
     const r1 = dur(l1.dep, l1.arr), w = c.transfer_wait, r2 = dur(l2.dep, l2.arr);
     const pct = v => (v / scale * 100).toFixed(2) + '%';
-    const fast = c.total_min === best;
+    const fast = c.total_min === best && !gone(c);
+    const when = whenText(c);
     const tight = w <= 3;
-    return `<li class="trip${fast ? ' fastest' : ''}" id="c${i}">
+    return `<li class="trip${fast ? ' fastest' : ''}${gone(c) ? ' gone' : ''}" id="c${i}" data-dep="${c.depart}">
       <div class="times">
         <span class="t">${ampm(c.depart, true)}</span><span class="to">to</span><span class="t">${ampm(c.arrive, true)}</span>
         <span class="dur">${hm(c.total_min)}</span>
       </div>
+      ${when ? `<span class="when">${when}</span>` : ''}
       ${fast ? '<span class="tag">Shortest travel time</span>' : ''}
       <div class="bar" role="img" aria-label="${l1.system} ${r1} min, change ${w} min, ${l2.system} ${r2} min">
         <i class="${l1.system === 'HSR' ? 'hsr' : 'tr'}" style="width:${pct(r1)}"></i>
@@ -524,7 +556,30 @@ async function refresh() {
 }
 
 $('day').value = dayFromNow(0);
-$('day').addEventListener('change', () => render(false));
+$('day').addEventListener('change', () => search());
+
+// ---------- Live countdowns for today's trips ----------
+function tick() {
+  if (!isToday()) return;
+  let changed = false;
+  document.querySelectorAll('.trip[data-dep]').forEach(li => {
+    const c = results[Number(li.id.slice(1))];
+    if (li.classList.contains('gone') !== gone(c)) changed = true;
+    const w = li.querySelector('.when'), t = whenText(c);
+    if (!!w !== !!t) changed = true; else if (w) w.textContent = t;
+  });
+  if (changed) render(false);   // a train left: redraw so the highlight moves on
+}
+setInterval(tick, 30000);
+
+// Coming back to the app: after 30 min away start again from now; otherwise just refresh.
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 30 * 60000) {
+    $('day').value = dayFromNow(0); setTimeToNow(); search();
+  } else refresh();
+});
 
 // ---------- Appearance: Auto (follows the phone) / Light / Dark ----------
 function paintThemeButtons() {
@@ -547,9 +602,16 @@ $('swap').addEventListener('click', () => {
   search();
 });
 paintRoute();
+setTimeToNow();
 search();
 
+// ---------- Updates: when a new version has been downloaded, reload into it once ----------
 if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;   // not on the very first install
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloading) { reloading = true; location.reload(); }
+  });
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 </script>

@@ -27,3 +27,5 @@ trains into Tainan ⇄ Taipei trips, via Shalun / HSR Tainan. See README.md.
 - After changing anything in `site/` or `timetables/`, run `python scripts/build_site.py`
   so `site/data.js` and the offline cache in `site/sw.js` are refreshed.
 - Times are "HH:MM" 24-hour strings in data; the page shows them as 12-hour AM/PM.
+- A timetable record may have `"days": ["Fri", "Sun"]` (HSR trains that run only on those
+  weekdays, from the ● marks in the PDF); no `days` means it runs daily. All TR trains run daily.

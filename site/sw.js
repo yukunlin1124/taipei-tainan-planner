@@ -1,6 +1,6 @@
 // Offline support: keep a copy of the planner on the phone.
 // CACHE and SHELL are written by scripts/build_site.py; do not edit them by hand.
-const CACHE = "planner-4c9d8712f4";
+const CACHE = "planner-899b5006d0";
 const SHELL = [
   "./",
   "./data.js",
@@ -13,7 +13,10 @@ const SHELL = [
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: "reload" skips the browser's HTTP cache, so a new version never saves old files.
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", e => {
