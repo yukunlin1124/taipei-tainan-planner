@@ -12,7 +12,8 @@ trains into Tainan ⇄ Taipei trips, via Shalun / HSR Tainan. See README.md.
   source PDFs in `timetables/source/`
 - Re-parse PDFs: `scripts/parse_tr.py` (OCR, image PDFs), `scripts/parse_hsr.py` (text PDF);
   then `scripts/build_site.py`
-- The planner people open: `site/` (static; uploaded as-is to a static host)
+- The planner people open: `site/` (static), published by `.github/workflows/pages.yml`
+  to https://yukunlin1124.github.io/taipei-tainan-planner/ ; `qr.png` points there
 - Generated, do not edit: `site/data.js` (from `timetables/*.json` by `scripts/build_site.py`)
 - Skip when searching: `.scratch/`, `__pycache__/`, `*.log`, `timetables/source/*.pdf` (binary)
 

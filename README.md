@@ -20,19 +20,22 @@ Everything runs in the browser: no server, and it works offline once installed.
 - **On Linux:** double-click `Open planner.desktop`. The first time, make the launchers
   runnable: `chmod +x "Open planner.desktop" "Open planner.sh"`; on GNOME also right-click
   the .desktop file → **Allow Launching**. From a terminal: `./"Open planner.sh"`.
-- **On an Android phone:** host the `site/` folder (below), open the address in
-  Chrome, then menu → **Add to Home screen / Install app**.
+- **On a phone:** scan the QR code below (or open
+  https://yukunlin1124.github.io/taipei-tainan-planner/), then in Chrome
+  menu → **Add to Home screen / Install app** so it opens with one tap, even offline.
 
-## Host it (free)
+  <img src="qr.png" alt="QR code for the planner" width="200">
 
-Upload the `site/` folder as-is to a static host, e.g. drag it onto
-https://app.netlify.com/drop (Cloudflare Pages and GitHub Pages also work).
-It must be served over HTTPS for "Install app" and offline use to work.
+## Hosting
+
+GitHub Pages publishes `site/` automatically on every push to `main`
+(`.github/workflows/pages.yml`). One-time setup: repository **Settings → Pages →
+Source: GitHub Actions**. Any other static HTTPS host also works with `site/` as-is.
 
 ## Project layout
 
 ```
-site/          the planner (upload this folder as-is)
+site/          the planner (published to GitHub Pages)
   index.html     page, styles, station names, booking links, calendar button
   matcher.js     trip-matching rules (TRANSFER_MIN, directions)
   data.js        generated from timetables/*.json - do not edit
@@ -41,6 +44,7 @@ timetables/    timetable data
   *.json         parsed timetables the planner uses
   source/        original PDFs
 scripts/       tools to refresh the timetables
+qr.png         QR code that opens the published planner
 ```
 
 ## Update the timetables
@@ -53,7 +57,7 @@ The schedules are assumed constant. When new PDFs arrive:
    → `timetables/*.json`. Check the printed counts (TR about 36/37, HSR 73/73).
 4. `python scripts/build_site.py` → rebuilds `site/data.js` and bumps the offline
    cache so installed phones update.
-5. Re-upload `site/`.
+5. Commit and push; GitHub Pages republishes the planner.
 
 To change the minimum change time at Shalun, edit `TRANSFER_MIN` in `site/matcher.js`,
-run step 4, and re-upload.
+run step 4, then commit and push.
