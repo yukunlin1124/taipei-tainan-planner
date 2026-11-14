@@ -11,6 +11,7 @@ first-leg train paired with the first connection leaving at or after it arrives
 (0-minute change at Shalun). The fastest trip on each page is highlighted.
 "Add to Google Calendar" opens Google Calendar with the trip filled in (both trains,
 times in Taiwan time); you tap Save and buy the tickets yourself.
+Pull down at the top of the page to refresh.
 
 Everything runs in the browser: no server, and it works offline once installed.
 

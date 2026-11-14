@@ -4,6 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#14273A">
+<script>
+  // Theme: "auto" follows the phone's setting; "light"/"dark" are the user's choice (saved on this phone).
+  (function () {
+    const dark = matchMedia('(prefers-color-scheme: dark)');
+    function apply() {
+      const choice = localStorage.getItem('planner.theme') || 'auto';
+      const t = choice === 'auto' ? (dark.matches ? 'dark' : 'light') : choice;
+      document.documentElement.dataset.theme = t;
+      const m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.content = t === 'dark' ? '#0E1822' : '#14273A';
+    }
+    window.applyTheme = apply;
+    dark.addEventListener('change', apply);
+    apply();
+  })();
+</script>
 <meta name="description" content="Tainan and Taipei trips combining Taiwan Railway and High Speed Rail.">
 <title>臺南 ⇄ 臺北 train planner</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -21,13 +37,34 @@
     --tr: #1E5AA8;
     --hsr: #E8701A;
     --band: #E7EEF4;
+    --field: #FFFFFF;          /* inputs and dropdowns */
+    --go-hover: #22405C;
+    --warn: #9A3B0C;           /* tight connection */
+    --shadow: rgba(0,0,0,.18);
+    --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2314273A' stroke-width='2'/%3E%3C/svg%3E");
+    color-scheme: light;
     --display: "Barlow Semi Condensed", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
     --body: "Barlow", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
     --zh: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
     --pad: clamp(18px, 5vw, 32px);
   }
+  :root[data-theme="dark"] {
+    --paper: #0E1822;
+    --ink: #E4ECF3;
+    --muted: #93A3B1;
+    --rule: #2A3A49;
+    --tr: #5A95E6;
+    --hsr: #F2873A;
+    --band: #172736;
+    --field: #15222F;
+    --go-hover: #C6D4E1;
+    --warn: #F2A06A;
+    --shadow: rgba(0,0,0,.5);
+    --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23E4ECF3' stroke-width='2'/%3E%3C/svg%3E");
+    color-scheme: dark;
+  }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; overscroll-behavior-y: contain; }  /* own pull-to-refresh */
   body {
     margin: 0; background: var(--paper); color: var(--ink);
     font: 400 1rem/1.5 var(--body);
@@ -68,14 +105,15 @@
     appearance: none; -webkit-appearance: none;
     width: 100%; min-height: 48px; padding: 0 30px 0 14px;
     font: 600 1.25rem var(--display);
-    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2314273A' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
+    background: var(--field) var(--arrow) no-repeat right 12px center;
+    color: var(--ink);
     border: 1.5px solid var(--rule); border-radius: 6px; cursor: pointer;
   }
   .timepick select:hover { border-color: var(--ink); }
   #day {
     width: 100%; min-width: 0; min-height: 48px; padding: 0 12px;
     font: 600 1.1rem var(--display); color: var(--ink);
-    background: #fff; border: 1.5px solid var(--rule); border-radius: 6px;
+    background: var(--field); border: 1.5px solid var(--rule); border-radius: 6px;
   }
   #day:hover { border-color: var(--ink); }
   .go {
@@ -83,7 +121,7 @@
     background: var(--ink); color: var(--paper); border: 0; border-radius: 6px;
     font: 600 1.1rem var(--display); cursor: pointer;
   }
-  .go:hover { background: #22405c; }
+  .go:hover { background: var(--go-hover); }
 
   /* ---------- Results ---------- */
   .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
@@ -128,7 +166,7 @@
   .stops { display: flex; flex-direction: column; }
   .stop { display: flex; gap: 10px; white-space: nowrap; }
   .stop .at { min-width: 68px; font-weight: 500; }
-  .legs .change.tight { color: #9a3b0c; font-weight: 600; }
+  .legs .change.tight { color: var(--warn); font-weight: 600; }
 
   .act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; }
   .pick {
@@ -142,10 +180,28 @@
   .trip.added .pick { background: var(--ink); color: var(--paper); }
   .status { font-size: .92rem; color: var(--muted); }
 
+
+  /* ---------- Pull to refresh ---------- */
+  .ptr { position: fixed; left: 50%; top: 0; z-index: 10; transform: translate(-50%, -60px);
+         padding: 8px 16px; border-radius: 999px; background: var(--ink); color: var(--paper);
+         font: 600 .95rem var(--display); box-shadow: 0 4px 14px var(--shadow); pointer-events: none; }
+  .ptr.go { transition: transform .25s ease; }
+
+  /* ---------- Theme picker ---------- */
+  .look { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+          margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--rule); }
+  .look span { font: 600 .95rem var(--display); }
+  .seg { display: inline-flex; border: 1.5px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .seg button { min-height: 40px; padding: 0 16px; border: 0; background: transparent; cursor: pointer;
+                font: 600 .95rem var(--display); color: var(--ink); }
+  .seg button + button { border-left: 1.5px solid var(--rule); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
   .pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px; }
   .pager button {
     min-height: 44px; padding: 0 16px; background: transparent; cursor: pointer;
     border: 1.5px solid var(--rule); border-radius: 6px; font: 600 1rem var(--display);
+    color: var(--ink);
   }
   .pager button:hover:not([disabled]) { border-color: var(--ink); }
   .pager button[disabled] { visibility: hidden; }
@@ -167,6 +223,7 @@
 </style>
 </head>
 <body>
+<div class="ptr" id="ptr" aria-live="polite"></div>
 <main class="wrap">
   <header class="route">
     <div class="ends">
@@ -204,6 +261,15 @@
   </form>
 
   <section id="results" aria-live="polite"></section>
+
+  <div class="look">
+    <span id="lookLabel">Appearance</span>
+    <div class="seg" role="group" aria-labelledby="lookLabel">
+      <button type="button" data-theme-choice="auto">Auto</button>
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
 </main>
 
 <script src="data.js"></script>
@@ -418,8 +484,57 @@ function added(i) {
   $('s' + i).textContent = 'Opened Google Calendar. Tap Save there.';
 }
 
+// ---------- Pull down to refresh (also inside the installed app) ----------
+(function pullToRefresh() {
+  const ind = $('ptr'), NEED = 80;
+  let y0 = null, dy = 0;
+  const show = (px, text) => { ind.style.transform = `translate(-50%, ${px - 60}px)`; ind.textContent = text; };
+  window.addEventListener('touchstart', e => {
+    y0 = window.scrollY <= 0 && e.touches.length === 1 ? e.touches[0].clientY : null;
+    dy = 0; ind.classList.remove('go');
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (y0 === null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    if (dy > 0) show(Math.min(dy * .5, 90), dy > NEED ? 'Release to refresh' : 'Pull to refresh');
+  }, { passive: true });
+  window.addEventListener('touchend', () => {
+    if (y0 === null) return;
+    ind.classList.add('go');
+    if (dy > NEED) { show(70, 'Refreshing…'); refresh().then(() => setTimeout(() => show(0, ''), 500)); }
+    else show(0, '');
+    y0 = null;
+  });
+})();
+
+// Re-run the search (keeping the page you're on) and look for a new version of the planner.
+async function refresh() {
+  if ($('day').value < dayFromNow(0)) $('day').value = dayFromNow(0);   // reopened on a later day
+  const keep = page;
+  search();
+  page = keep;
+  render(false);
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+  } catch (e) {}
+}
+
 $('day').value = dayFromNow(0);
 $('day').addEventListener('change', () => render(false));
+
+// ---------- Appearance: Auto (follows the phone) / Light / Dark ----------
+function paintThemeButtons() {
+  const choice = localStorage.getItem('planner.theme') || 'auto';
+  document.querySelectorAll('[data-theme-choice]').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.themeChoice === choice)));
+}
+document.querySelectorAll('[data-theme-choice]').forEach(b => b.addEventListener('click', () => {
+  localStorage.setItem('planner.theme', b.dataset.themeChoice);
+  window.applyTheme();
+  paintThemeButtons();
+}));
+paintThemeButtons();
 
 $('ask').addEventListener('submit', e => { e.preventDefault(); search(); });
 $('swap').addEventListener('click', () => {

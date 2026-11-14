@@ -7,7 +7,9 @@ trains into Tainan ⇄ Taipei trips, via Shalun / HSR Tainan. See README.md.
 
 - Trip-matching rules (TRANSFER_MIN, directions, station names in zh/en, route labels):
   `site/matcher.js`
-- Booking links, page design, travel day and the Add to Google Calendar button: `site/index.html`
+- Booking links, page design, travel day, the Add to Google Calendar button,
+  pull-to-refresh and the light/dark theme (colours in `:root` and `[data-theme="dark"]`,
+  choice in localStorage `planner.theme`): `site/index.html`
 - Timetables: `timetables/*.json` (parsed, what the planner uses); source PDFs in `timetables/source/`
 - Re-parse PDFs: `scripts/parse_tr.py` (OCR, image PDFs), `scripts/parse_hsr.py` (text PDF);
   then `scripts/build_site.py`
