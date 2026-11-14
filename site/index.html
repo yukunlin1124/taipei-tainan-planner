@@ -589,15 +589,14 @@ function calendarUrl(c) {
 }
 
 // ---------- Share: the phone's share menu (LINE, Messages, ...), or copy as a fallback ----------
-// Short, in the page's language: date and route, times, then one line per train.
+// Short, in the page's language: the date, then one line per ticket (train, times, stations).
 function shareText(c) {
   const [y, m, d] = travelDay().split('-').map(Number);
   const day = new Date(y, m - 1, d).toLocaleDateString(t('locale'), { weekday: 'short', month: 'short', day: 'numeric' });
   const name = n => (STATION[n] || [n, n])[zh() ? 0 : 1];
   const leg = l => `${sysName(l.system)} ${l.train}  ${ampm(l.dep)} ${name(l.from)} → ${ampm(l.arr)} ${name(l.to)}`;
   return [
-    `${day}  ${routeLabel()}`,
-    `${ampm(c.depart)} → ${ampm(c.arrive)} (${hm(c.total_min)})`,
+    day,
     leg(c.leg1),
     leg(c.leg2),
   ].join('\n');
